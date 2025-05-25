@@ -1,38 +1,31 @@
 import os
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
-from dotenv import load_dotenv
+from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
 
-# تحميل متغيرات البيئة من ملف .env
-load_dotenv()
+# قراءة التوكن و ID الأدمن من متغيرات البيئة
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+ADMIN_ID = os.getenv("ADMIN_ID")
 
-# قراءة التوكن ومعرف الأدمن من متغيرات البيئة
-TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))  # تأكد أنه عدد صحيح
+if BOT_TOKEN is None or ADMIN_ID is None:
+    raise ValueError("يجب ضبط متغيرات البيئة: BOT_TOKEN و ADMIN_ID")
 
-# دالة الرد على الرسائل
-async def reply_to_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# تحويل ADMIN_ID إلى int
+ADMIN_ID = int(ADMIN_ID)
+
+# دالة الرد على أي رسالة
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
-    user_id = update.effective_user.id
+    await update.message.reply_text(f"استلمت رسالتك: {user_message}")
 
-    if user_id == ADMIN_ID:
-        await update.message.reply_text(f"أهلًا أدمن! قلت: {user_message}")
-    else:
-        await update.message.reply_text("هذا البوت مخصص للإدارة فقط.")
+# إعداد البوت
+def main():
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-# دالة /start
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("أرسل أي رسالة، وسأرد عليك إذا كنت الأدمن.")
+    # التعامل مع أي رسالة نصية
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-# تشغيل البوت
-if __name__ == '__main__':
-    if not TOKEN:
-        raise ValueError("يرجى ضبط BOT_TOKEN في متغيرات البيئة أو ملف .env")
-
-    app = ApplicationBuilder().token(TOKEN).build()
-
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, reply_to_message))
-
-    print("البوت يعمل...")
+    print("البوت شغال الآن...")
     app.run_polling()
+
+if __name__ == "__main__":
+    main()
